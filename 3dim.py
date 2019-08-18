@@ -4,6 +4,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 import matplotlib.pyplot as plt
+from MLP import mlp
 
 fig = plt.figure()
 sp = fig.add_subplot(1,1,1)

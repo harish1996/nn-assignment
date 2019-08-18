@@ -1,20 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from .. import activations
 # from ...LinearlySeperableGenerator import base_random
-
-class ReLU:
-	def _apply_activation( self,before_activation ):
-		cpy = np.array( before_activation )
-		cpy[ before_activation < 0 ] = 0
-		return cpy
-
-
-class Signum:
-	def _apply_activation( self,before_activation ):
-		cpy = np.array( before_activation )
-		cpy[ before_activation < 0 ] = -1
-		cpy[ before_activation >= 0 ] = 1
-		return cpy
 
 
 def plot_weight_lines_2d( W, lim_lower = 0, lim_higher= 25 ):
@@ -39,19 +26,25 @@ def plot_weight_lines_2d( W, lim_lower = 0, lim_higher= 25 ):
     plt.show()
 
 class SinglePerceptron:
-	def __init__(self, input_size, initializer = "zeros", activation = "signum", lr = 0.001 ):
+	def __init__(self, input_size, initializer = "zeros", activation = "linear", lr = 0.001 ):
 		self.input_size = input_size
 
-		assert( activation in [ "signum", "relu" ] ),"Activation functions can be signum or relu"
+		# assert( activation in [ "signum", "relu" ] ),"Activation functions can be signum or relu"
 
 		self.W = np.random.normal( size= (input_size,1) ) #set of 0 vectors		
 		self.bias = np.random.normal( size=1 )
 
-		if( activation == "signum" ):
-			self.activation = Signum()
+		# if( activation == "signum" ):
+		# 	self.activation = Signum()
 
-		else: #(activation == "relu" ):
-			self.activation = ReLU()
+		# elif( activation == "relu" ): #(activation == "relu" ):
+		# 	self.activation = ReLU()
+		# else:
+		# 	self.activation = Linear()
+
+		activation_class = activations.get(activation)
+
+		self.activation = activation_class()
 
 		self.lr = lr
 
@@ -107,19 +100,24 @@ class SinglePerceptron:
 
 class SinglePerceptronLayer:
 
-	def __init__(self, input_size, nodes, initializer = "zeros", activation = "signum", lr = 0.01 ):
+	def __init__(self, input_size, nodes, initializer = "zeros", activation = "linear", lr = 0.01 ):
 		self.input_size = input_size
 		self.nodes = nodes
 
-		assert( activation in [ "signum", "relu" ] ),"Activation functions can be signum or relu"
+		# assert( activation in [ "signum", "relu", "linear" ] ),"Activation functions can be signum or relu"
 
 		self.W = np.random.normal( size= (nodes,input_size+1) ) #set of 0 vectors
 
-		if( activation == "signum" ):
-			self.activation = Signum()
+		# if( activation == "signum" ):
+		# 	self.activation = Signum()
+		# elif ( activation == "relu"):
+		# 	self.activation = ReLU()
+		# else: #(activation == "linear" ):
+		# 	self.activation = Linear()
 
-		else: #(activation == "relu" ):
-			self.activation = ReLU()
+		activation_class = activations.get(activation)
+		
+		self.activation = activation_class()
 
 		self.lr = lr
 
