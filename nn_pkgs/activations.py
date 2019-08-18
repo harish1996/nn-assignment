@@ -10,7 +10,10 @@ class Activation(object):
 		return self._apply_activation(before_activation)
 
 class DifferentiableActivation(Activation):
-	def backpropogate( self, Y ):
+	def gradient( self, before_activation ):
+		pass
+
+	def propogate_error( self, before_activation, error ):
 		pass
 
 class ReLU(DifferentiableActivation):
@@ -19,7 +22,7 @@ class ReLU(DifferentiableActivation):
 		cpy[ before_activation < 0 ] = 0
 		return cpy
 
-	def backpropogate( self, before_activation ):
+	def gradient( self, before_activation ):
 		cpy = np.array( before_activation )
 		cpy[ before_activation < 0 ] = 0
 		cpy[ before_activation >= 0 ] = 1
@@ -37,7 +40,7 @@ class Linear(DifferentiableActivation):
 	def _apply_activation(self,before_activation):
 		return before_activation
 
-	def backpropogate( self, before_activation ):
+	def gradient( self, before_activation ):
 		return np.ones_like(before_activation)
 
 class Sigmoid(DifferentiableActivation):
@@ -45,7 +48,7 @@ class Sigmoid(DifferentiableActivation):
 	def _apply_activation( self, before_activation ):
 		return 1/( 1+np.exp(-before_activation) )
 
-	def backpropogate( self, before_activation ):
+	def gradient( self, before_activation ):
 		sigma = _apply_activation( before_activation )
 		return sigma*(1-sigma)
 

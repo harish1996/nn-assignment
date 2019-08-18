@@ -129,10 +129,15 @@ class SinglePerceptronLayer:
 
 		x_with_bias = np.append( np.ones( (X.shape[0],1) )*1, X, axis=1 )
 
+		self.X = x_with_bias
 		# print(self.W,x_with_bias)
 		before_activation = self.W.dot( x_with_bias.T ).T # Each row corresponds to outputs to a particular input
 		self.out = self.activation._apply_activation( before_activation )
 		return self.out
+
+	def backpropogate( self, X, error ):
+		pass
+
 
 	def predict( self, X ):
 		return self.feedforward(X)

@@ -35,16 +35,8 @@ class MultiLayerPerceptron(object):
 		else:
 			raise ValueError("Initializer should be one of zeros, ones, normal ") 
 
-		# # Checks if the activation is valid.
-		# # TODO: Delegate logic to seperate module
-		# if activation and activation in ["relu", "sigmoid","linear"]:
-		# 	self.activation = activation
-		# elif activation is None:
-		# 	self.activation = "linear"
-		# else:
-		# 	raise ValueError("Activation should be one of relu, sigmoid, linear ") 
-
-		
+		activation_class = activations.get(activation)
+		assert( issubclass(activation_class,activations.DifferentiableActivation) ),"Activation function must be built on the top of DifferentiableActivation class"
 		if lr is None:
 			lr = 0.1
 
