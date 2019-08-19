@@ -130,19 +130,38 @@ class SinglePerceptronLayer:
 		x_with_bias = np.append( np.ones( (X.shape[0],1) )*1, X, axis=1 )
 
 		self.X = x_with_bias
+
 		# print(self.W,x_with_bias)
-		before_activation = self.W.dot( x_with_bias.T ).T # Each row corresponds to outputs to a particular input
-		self.out = self.activation._apply_activation( before_activation )
+		self.before_activation = self.W.dot( x_with_bias.T ).T # Each row corresponds to outputs to a particular input
+		print(self.before_activation)
+		self.out = self.activation._apply_activation( self.before_activation )
 		return self.out
 
-	def backpropogate( self, X, error ):
-		pass
+	def backpropogate( self, error ):
+		
 
+		activation_gradient = self.activation.gradient( self.before_activation )
+		self.error = error * activation_gradient
+		self.update_weights = self.error.T.dot(self.X)
+
+		self.error = self.error.dot( self.W[:,1:] )
+
+		# print("backpropogate SLP layer")
+		# print(self.X.shape)
+		# print(error.shape)
+		# print(activation_gradient.shape)
+		# print(self.error.shape)
+		# print(self.update_weights.shape)
+
+		return self.error 
+
+	def adjust_weights( self ):
+		self.W -= self.lr * self.update_weights
 
 	def predict( self, X ):
 		return self.feedforward(X)
 
-	def fit_one_epoch( self, X, Y, bs=5 ):
+	def fit_one_epoch( self, X, Y, bs=5 ):Loss is 
 		assert( isinstance(X,np.ndarray) ),"X should be np.ndarray"
 		assert( isinstance(Y,np.ndarray) ),"Y should be np.ndarray"
 		assert( X.shape[0] == Y.shape[0] ),"X and Y should have same number of observations"

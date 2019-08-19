@@ -49,7 +49,7 @@ class Sigmoid(DifferentiableActivation):
 		return 1/( 1+np.exp(-before_activation) )
 
 	def gradient( self, before_activation ):
-		sigma = _apply_activation( before_activation )
+		sigma = self._apply_activation( before_activation )
 		return sigma*(1-sigma)
 
 relu = ReLU
