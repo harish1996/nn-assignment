@@ -75,7 +75,7 @@ class MultiLayerPerceptron(object):
 			feed = self.layers[i].feedforward( feed )
 			# print(self.layers[i].W)
 			# print(feed)
-		print(feed)
+		# print(feed)
 		self.out = feed
 
 		return feed
@@ -83,12 +83,13 @@ class MultiLayerPerceptron(object):
 	def backpropogate( self, Y ):
 
 		self.loss.set_output( Y )
-		print(self.out,Y)
-		print("Loss is "+str(self.loss.feedforward(self.out)))
+		# print(self.out,Y)
+		# print("Loss is "+str(self.loss.feedforward(self.out)))
 		# print(self.loss.feedforward())
-
+		loss = self.loss.feedforward( self.out )
 		error = self.loss.backpropogate( self.out )
 
+		# print(loss,error)
 		for i in range(len(self.shape)-1,-1,-1):
 			error = self.layers[i].backpropogate( error )
 

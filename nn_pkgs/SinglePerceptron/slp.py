@@ -131,10 +131,10 @@ class SinglePerceptronLayer:
 
 		self.X = x_with_bias
 
-		# print(self.W,x_with_bias)
+		# print(self.W,x_with_bias.T)
 		self.before_activation = self.W.dot( x_with_bias.T ).T # Each row corresponds to outputs to a particular input
-		print(self.before_activation)
 		self.out = self.activation._apply_activation( self.before_activation )
+		# print(self.before_activation,self.out)
 		return self.out
 
 	def backpropogate( self, error ):
@@ -146,22 +146,24 @@ class SinglePerceptronLayer:
 
 		self.error = self.error.dot( self.W[:,1:] )
 
+		print(activation_gradient,error,self.error)
 		# print("backpropogate SLP layer")
 		# print(self.X.shape)
 		# print(error.shape)
 		# print(activation_gradient.shape)
 		# print(self.error.shape)
-		# print(self.update_weights.shape)
+		# print(self.update_weights)
 
 		return self.error 
 
 	def adjust_weights( self ):
 		self.W -= self.lr * self.update_weights
+		print(self.W,self.update_weights)
 
 	def predict( self, X ):
 		return self.feedforward(X)
 
-	def fit_one_epoch( self, X, Y, bs=5 ):Loss is 
+	def fit_one_epoch( self, X, Y, bs=5 ):
 		assert( isinstance(X,np.ndarray) ),"X should be np.ndarray"
 		assert( isinstance(Y,np.ndarray) ),"Y should be np.ndarray"
 		assert( X.shape[0] == Y.shape[0] ),"X and Y should have same number of observations"
