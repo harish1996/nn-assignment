@@ -146,7 +146,7 @@ class SinglePerceptronLayer:
 
 		self.error = self.error.dot( self.W[:,1:] )
 
-		print(activation_gradient,error,self.error)
+		# print(activation_gradient,error,self.error)
 		# print("backpropogate SLP layer")
 		# print(self.X.shape)
 		# print(error.shape)
@@ -158,7 +158,7 @@ class SinglePerceptronLayer:
 
 	def adjust_weights( self ):
 		self.W -= self.lr * self.update_weights
-		print(self.W,self.update_weights)
+		# print(self.W,self.update_weights)
 
 	def predict( self, X ):
 		return self.feedforward(X)
