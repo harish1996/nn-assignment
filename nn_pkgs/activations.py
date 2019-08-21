@@ -1,8 +1,17 @@
 import numpy as np
+from . import Layer
 
-class Activation(object):
+class Activation(Layer):
 	def _apply_activation( self, before_activation ):
 		pass
+
+
+	def feedforward(self, X):
+		self.before_activation = X
+		return self._apply_activation(X)
+
+	def backpropogate( self, error ):
+		return np.zeros_like(error)
 
 	# Allows directly calling _apply_activation through the
 	# object.
@@ -13,8 +22,11 @@ class DifferentiableActivation(Activation):
 	def gradient( self, before_activation ):
 		pass
 
-	def propogate_error( self, before_activation, error ):
-		pass
+	def backpropogate( self, error ):
+		return error * self.gradient( self.before_activation )
+
+	# def propogate_error( self, before_activation, error ):
+	# 	pass
 
 class ReLU(DifferentiableActivation):
 	def _apply_activation( self,before_activation ):
@@ -26,8 +38,7 @@ class ReLU(DifferentiableActivation):
 		cpy = np.array( before_activation )
 		cpy[ before_activation < 0 ] = 0
 		cpy[ before_activation >= 0 ] = 1
-		return cpy		
-
+		return cpy	
 
 class Signum(Activation):
 	def _apply_activation( self,before_activation ):

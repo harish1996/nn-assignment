@@ -1,22 +1,29 @@
 import numpy as np 
+from . import layer 
 
-class Loss(object):
+class Loss(Layer):
 
 	def set_output( self, Y ):
 		self.actual = Y
 
-	def feedforward( self, X ):
+	def gradient( self ):
 		pass
 
-	def backpropogate( self, X ):
+	def loss_value( self, X ):
 		pass
 
-class MSE(Loss):
 	def feedforward( self, X ):
 		self.pred = X
+		return self.loss_value( X )
+
+	def backpropogate( self, error ):
+		return self.gradient()
+
+class MSE(Loss):
+	def loss_value( self, X ):
 		return 0.5*( X - self.actual)**2
 
-	def backpropogate( self, X ):
+	def gradient( self ):
 		return ( self.pred - self.actual )
 
 mse = mean_squared_error = MSE

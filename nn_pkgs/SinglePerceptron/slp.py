@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from .. import activations
+from .. import layer
 # from ...LinearlySeperableGenerator import base_random
 
 
@@ -98,7 +99,7 @@ class SinglePerceptron:
 
 
 
-class SinglePerceptronLayer:
+class SinglePerceptronLayer(Layer):
 
 	def __init__(self, input_size, nodes, initializer = "zeros", activation = "linear", lr = 0.01 ):
 		self.input_size = input_size
