@@ -2,6 +2,7 @@ from ..SinglePerceptron.slp import SinglePerceptronLayer
 import numpy as np
 from .. import activations
 from .. import loss
+from ..layer import Layer
 
 # act = slp.Signum()
 # print( act( np.array([-1,-2,1,2]) ) )
@@ -56,12 +57,14 @@ class MultiLayerPerceptron(object):
 
 		# First layer is special, since the number of inputs is determined by input_shape
 		self.layers.append( SinglePerceptronLayer( input_size = input_shape, nodes = self.shape[0], 
-			initializer = self.initializer, activation = activation, lr = self.lr[0] ))
+			initializer = self.initializer, lr = self.lr[0] ))
+		self.layers.append( activation_class() )
 
 		# Create Perceptron layers for all the other layers.
 		for i in range(len(self.shape) - 1):
 			self.layers.append( SinglePerceptronLayer( input_size = self.shape[i], nodes = self.shape[i+1],
-				initializer = self.initializer, activation = activation, lr = self.lr[i+1] ) )
+				initializer = self.initializer, lr = self.lr[i+1] ) )
+			self.layers.append( activation_class() )
 
 	def feedforward( self, X ):
 
@@ -71,7 +74,7 @@ class MultiLayerPerceptron(object):
 		self.X = X
 		feed = X
 
-		for i in range(len(self.shape)):
+		for i in range(len(self.layers)):
 			feed = self.layers[i].feedforward( feed )
 			# print(self.layers[i].W)
 			# print(feed)
@@ -87,14 +90,14 @@ class MultiLayerPerceptron(object):
 		# print("Loss is "+str(self.loss.feedforward(self.out)))
 		# print(self.loss.feedforward())
 		los = self.loss.feedforward( self.out )
-		error = self.loss.backpropogate( self.out )
+		error = self.loss.backpropogate( None )
 
 		# print(los,error)
-		for i in range(len(self.shape)-1,-1,-1):
+		for i in range(len(self.layers)-1,-1,-1):
 			error = self.layers[i].backpropogate( error )
 
-		for i in range(len(self.shape)):
-			self.layers[i].adjust_weights()
+		for i in range(len(self.layers)):
+			self.layers[i].update()
 
 
 	def _fit_one_epoch( self, X, Y, shuffle=True, bs=1 ):
@@ -138,6 +141,10 @@ class MultiLayerPerceptron(object):
 			out = self._fit_one_epoch( X, Y, shuffle, bs )
 
 		return out
+
+	def predict( self, X ):
+		return self.feedforward( X )
+
 
 
 

@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from .. import activations
-from .. import layer
+from ..layer import Layer
 # from ...LinearlySeperableGenerator import base_random
 
 
@@ -101,7 +101,7 @@ class SinglePerceptron:
 
 class SinglePerceptronLayer(Layer):
 
-	def __init__(self, input_size, nodes, initializer = "zeros", activation = "linear", lr = 0.01 ):
+	def __init__(self, input_size, nodes, initializer = "zeros", lr = 0.01 ):
 		self.input_size = input_size
 		self.nodes = nodes
 
@@ -116,9 +116,9 @@ class SinglePerceptronLayer(Layer):
 		# else: #(activation == "linear" ):
 		# 	self.activation = Linear()
 
-		activation_class = activations.get(activation)
+		# activation_class = activations.get(activation)
 		
-		self.activation = activation_class()
+		# self.activation = activation_class()
 
 		self.lr = lr
 
@@ -134,18 +134,18 @@ class SinglePerceptronLayer(Layer):
 
 		# print(self.W,x_with_bias.T)
 		self.before_activation = self.W.dot( x_with_bias.T ).T # Each row corresponds to outputs to a particular input
-		self.out = self.activation._apply_activation( self.before_activation )
+		# self.out = self.activation._apply_activation( self.before_activation )
 		# print(self.before_activation,self.out)
-		return self.out
+		return self.before_activation
 
 	def backpropogate( self, error ):
 		
 
-		activation_gradient = self.activation.gradient( self.before_activation )
-		self.error = error * activation_gradient
-		self.update_weights = self.error.T.dot(self.X)
+		# activation_gradient = self.activation.gradient( self.before_activation )
+		# self.error = error * activation_gradient
+		self.update_weights = error.T.dot(self.X)
 
-		self.error = self.error.dot( self.W[:,1:] )
+		self.error = error.dot( self.W[:,1:] )
 
 		# print(activation_gradient,error,self.error)
 		# print("backpropogate SLP layer")
@@ -157,7 +157,7 @@ class SinglePerceptronLayer(Layer):
 
 		return self.error 
 
-	def adjust_weights( self ):
+	def update( self ):
 		self.W -= self.lr * self.update_weights
 		# print(self.W,self.update_weights)
 

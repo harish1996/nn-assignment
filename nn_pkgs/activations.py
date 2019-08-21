@@ -1,10 +1,9 @@
 import numpy as np
-from . import Layer
+from .layer import Layer
 
 class Activation(Layer):
 	def _apply_activation( self, before_activation ):
 		pass
-
 
 	def feedforward(self, X):
 		self.before_activation = X

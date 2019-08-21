@@ -1,5 +1,5 @@
 import numpy as np 
-from . import layer 
+from .layer import Layer 
 
 class Loss(Layer):
 

@@ -6,3 +6,6 @@ class Layer(object):
 
 	def backpropogate( self, error ):
 		pass
+
+	def update( self ):
+		pass
