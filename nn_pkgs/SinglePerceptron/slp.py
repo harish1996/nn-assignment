@@ -30,18 +30,8 @@ class SinglePerceptron:
 	def __init__(self, input_size, initializer = "zeros", activation = "linear", lr = 0.001 ):
 		self.input_size = input_size
 
-		# assert( activation in [ "signum", "relu" ] ),"Activation functions can be signum or relu"
-
 		self.W = np.random.normal( size= (input_size,1) ) #set of 0 vectors		
 		self.bias = np.random.normal( size=1 )
-
-		# if( activation == "signum" ):
-		# 	self.activation = Signum()
-
-		# elif( activation == "relu" ): #(activation == "relu" ):
-		# 	self.activation = ReLU()
-		# else:
-		# 	self.activation = Linear()
 
 		activation_class = activations.get(activation)
 
@@ -105,20 +95,7 @@ class SinglePerceptronLayer(Layer):
 		self.input_size = input_size
 		self.nodes = nodes
 
-		# assert( activation in [ "signum", "relu", "linear" ] ),"Activation functions can be signum or relu"
-
 		self.W = np.random.normal( size= (nodes,input_size+1) ) #set of 0 vectors
-
-		# if( activation == "signum" ):
-		# 	self.activation = Signum()
-		# elif ( activation == "relu"):
-		# 	self.activation = ReLU()
-		# else: #(activation == "linear" ):
-		# 	self.activation = Linear()
-
-		# activation_class = activations.get(activation)
-		
-		# self.activation = activation_class()
 
 		self.lr = lr
 
@@ -134,32 +111,19 @@ class SinglePerceptronLayer(Layer):
 
 		# print(self.W,x_with_bias.T)
 		self.before_activation = self.W.dot( x_with_bias.T ).T # Each row corresponds to outputs to a particular input
-		# self.out = self.activation._apply_activation( self.before_activation )
-		# print(self.before_activation,self.out)
+
 		return self.before_activation
 
 	def backpropogate( self, error ):
 		
-
-		# activation_gradient = self.activation.gradient( self.before_activation )
-		# self.error = error * activation_gradient
 		self.update_weights = error.T.dot(self.X)
 
 		self.error = error.dot( self.W[:,1:] )
-
-		# print(activation_gradient,error,self.error)
-		# print("backpropogate SLP layer")
-		# print(self.X.shape)
-		# print(error.shape)
-		# print(activation_gradient.shape)
-		# print(self.error.shape)
-		# print(self.update_weights)
 
 		return self.error 
 
 	def update( self ):
 		self.W -= self.lr * self.update_weights
-		# print(self.W,self.update_weights)
 
 	def predict( self, X ):
 		return self.feedforward(X)
@@ -223,5 +187,3 @@ class SinglePerceptronLayer(Layer):
 	def dummy_weights(self, W):
 		self.W = W
 
-if __name__ == "__main__":
-	print("x")

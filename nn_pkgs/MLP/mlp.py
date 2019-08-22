@@ -4,17 +4,27 @@ from .. import activations
 from .. import loss
 from ..layer import Layer
 
-# act = slp.Signum()
-# print( act( np.array([-1,-2,1,2]) ) )
+"""@package MultiLayerPerceptron
 
-# def func( *args, **kwargs ):
-# 	print(args)
-# 	print(kwargs)
+Creates a multilayer perceptron model. Stacks multiple activation and single layer perceptrons 
+back to back to form the multilayer perceptron.
+"""
 class MultiLayerPerceptron(object):
 
+	"""
+	The constructor
+
+	@param shape - The size of each layer and the number of nodes in each layer
+	@param input_shape - The dimension of the input.
+	@param initializer - Initializer function used to initialize the bias and weights
+			of the neural network.
+	@param activation - The activation function to be used after each layer.
+	@param lr - Learning rate to be used.
+	"""
 	def __init__( self, shape, input_shape, initializer = "normal",
 			activation = None, lr = None ):
 
+		# Shape indicates the 
 		if isinstance(shape,(tuple,list)):
 			self.shape = list(shape)
 		else:
@@ -76,9 +86,7 @@ class MultiLayerPerceptron(object):
 
 		for i in range(len(self.layers)):
 			feed = self.layers[i].feedforward( feed )
-			# print(self.layers[i].W)
-			# print(feed)
-		# print(feed)
+			
 		self.out = feed
 
 		return feed
@@ -86,13 +94,10 @@ class MultiLayerPerceptron(object):
 	def backpropogate( self, Y ):
 
 		self.loss.set_output( Y )
-		# print(self.out,Y)
-		# print("Loss is "+str(self.loss.feedforward(self.out)))
-		# print(self.loss.feedforward())
+
 		los = self.loss.feedforward( self.out )
 		error = self.loss.backpropogate( None )
 
-		# print(los,error)
 		for i in range(len(self.layers)-1,-1,-1):
 			error = self.layers[i].backpropogate( error )
 
@@ -144,8 +149,3 @@ class MultiLayerPerceptron(object):
 
 	def predict( self, X ):
 		return self.feedforward( X )
-
-
-
-
-# func( 54,"big", "excellent", big = 12, act = 54 )
