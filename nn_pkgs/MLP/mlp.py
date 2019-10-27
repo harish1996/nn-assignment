@@ -3,6 +3,8 @@ import numpy as np
 from .. import activations
 from .. import loss
 from ..layer import Layer
+import tqdm
+
 
 """@package MultiLayerPerceptron
 
@@ -135,15 +137,21 @@ class MultiLayerPerceptron(object):
 
 		return out
 
-	def fit( self, X, Y, loss_function=None, epochs=10, shuffle=True, bs=1 ):
+	def fit( self, X, Y, loss_function=None, epochs=10, shuffle=True, bs=1, verbose=True ):
 
 		if loss_function is None:
 			loss_function = "mse"
 		loss_func = loss.get( loss_function )
 		self.loss = loss_func()
 
+		# Prints a progress bar
+		if verbose:
+			pbar = tqdm.tqdm( total=epochs, unit="epochs" )
+
 		for i in range(epochs):
 			out = self._fit_one_epoch( X, Y, shuffle, bs )
+			if verbose:
+				pbar.update(1)
 
 		return out
 
