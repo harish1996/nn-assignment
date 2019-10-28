@@ -92,7 +92,7 @@ class Convolution2D(Convolution):
 
 class Convolution3D(Convolution):
 	
-	def convolve(self, input, filters):
+	def convolve(self, arr, filters):
 		if( arr.shape != self.input_shape ):
 			raise TypeError("Input Shape must match with the initialized shape. Initialized:"+str(self.input_shape)+
 				" Given:"+str(arr.shape))
@@ -101,15 +101,17 @@ class Convolution3D(Convolution):
 			raise TypeError("Filtered Shape must match with the initialized shape. Initialized:"+str(self.window_shape)+
 				" Given:"+str(filter_shape))
 
-		windows = self.generate_windows(arr)
-		print(windows.shape)
+		new_arr = self.pad(arr,self.padding)
+		windows = self.generate_windows(new_arr)
+		# print(windows)
 		out = np.tensordot(filters,windows,axes=([1,2,3],[3,4,5]))
 		print(out.shape)
 		return out[:,0,:,:]
 
 	def pad(self,arr,padding):
 		padded_array = self.zero_pad(arr.shape,padding)
-		padded_array[:,padding:padding+arr.shape[0],padding:padding+arr.shape[1]] = arr
+		# print(padded_array.shape)
+		padded_array[:,padding:padding+arr.shape[1],padding:padding+arr.shape[2]] = arr
 		return padded_array
 
 	def gen_strides(self,stride):
