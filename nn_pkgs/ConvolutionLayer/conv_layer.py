@@ -2,6 +2,7 @@ import numpy as np
 from .. import activations
 from ..layer import Layer
 from numpy.lib.stride_tricks import as_strided
+
 class Convolution():
 	def __init__(self, input_shape, filter_shape, stride, padding ):
 
@@ -25,12 +26,16 @@ class Convolution():
 		self.outshape = tuple((self.in_shape - self.window_shape) // self.stride + 1)
 		# outshape: ([X, (...), Z], ..., [Wx, (...), Wz])
 		self.outshape = self.outshape + tuple(self.input_shape)[:-len(self.stride)] + tuple(self.window_shape)
+		# print("Outshape"+str(self.outshape[:len(self.stride)]))
 
+		print(self.window_strides,self.step_strides,self.outshape)
+
+		self.output_shape = self.outshape[:len(self.stride)]
 		# print(self.in_shape,self.window_shape,self.window_strides,self.step_strides,self.outshape)
 		self.input_shape[self.input_shape.shape[0]-2:] -= 2* padding
 		self.input_shape = tuple(self.input_shape)
 		
-		self.padding = padding		
+		self.padding = padding
 
 
 	def generate_windows(self, arr):
@@ -69,9 +74,20 @@ class Convolution2D(Convolution):
 		# print(new_arr)
 		windows = self.generate_windows(new_arr)
 		# print(filters)
-		# print(windows)
+		print(windows.shape)
 		out = np.tensordot(filters,windows,axes=([1,2],[2,3]))
-		# print(out.shape)
+		print(out.shape)
+		return out
+
+	def gradient(self,error):
+		# print("error shape ="+str(error.shape)+" output shape="+str(self.output_shape))
+		if error.shape[1:] != self.output_shape[1:]:
+			raise TypeError("The dimension of error is not as expected")
+		n_filters = error.shape[0]
+		channel_size = error.shape[1:]
+		print(error.shape,self.windows.shape)
+		out = np.tensordot(error,self.windows,axes=([1,2],[1,2]))
+		
 		return out
 
 	def gen_strides(self,stride):
@@ -91,7 +107,12 @@ class Convolution2D(Convolution):
 		return padded_array
 
 class Convolution3D(Convolution):
-	
+	def __init__(self,input_shape,filter_shape,stride,padding):
+		if input_shape[0] != filter_shape[0]:
+			raise TypeError("Filter's third dimension ( here "+str(input_shape[0])+" ) should be equal to input's third dimension ( here "
+				+ str(filter_shape[0])+" )")
+		super().__init__(input_shape,filter_shape,stride,padding)
+
 	def convolve(self, arr, filters):
 		if( arr.shape != self.input_shape ):
 			raise TypeError("Input Shape must match with the initialized shape. Initialized:"+str(self.input_shape)+
@@ -102,10 +123,21 @@ class Convolution3D(Convolution):
 				" Given:"+str(filter_shape))
 
 		new_arr = self.pad(arr,self.padding)
-		windows = self.generate_windows(new_arr)
-		# print(windows)
-		out = np.tensordot(filters,windows,axes=([1,2,3],[3,4,5]))
+		self.windows = self.generate_windows(new_arr)
+		print(self.windows.shape)
+		out = np.tensordot(filters,self.windows,axes=([1,2,3],[3,4,5]))
 		print(out.shape)
+		return out[:,0,:,:]
+
+	def gradient(self,error):
+		# print("error shape ="+str(error.shape)+" output shape="+str(self.output_shape))
+		if error.shape[1:] != self.output_shape[1:]:
+			raise TypeError("The dimension of error is not as expected")
+		n_filters = error.shape[0]
+		channel_size = error.shape[1:]
+		print(error.shape,self.windows.shape)
+		out = np.tensordot(error,self.windows,axes=([1,2],[1,2]))
+
 		return out[:,0,:,:]
 
 	def pad(self,arr,padding):
@@ -127,25 +159,50 @@ class Convolution3D(Convolution):
 
 
 class ConvolutionalLayer(Layer):
-	def __init__(self, input_dim,filter_dim, stride, padding = 0):
+	def __init__(self, input_dim,filter_dim, n_filters = 1 , stride = 1, padding = 0):
 
 		self.input_dim = input_dim
 		
 		if len(filter_dim) != len(input_dim):
 			raise TypeError("Number of dimensions of the input and filter must match.")
-		if len(filter_dim) == 3 and filter_dim[2] != input_dim[3]:
+		if len(filter_dim) == 3 and filter_dim[0] != input_dim[0]:
 			raise TypeError("The 3rd dimension of the filter and input must be of same length")
+		if n_filters <= 0:
+			raise ValueError("Number of filters must be positive")
+		if not isinstance(n_filters,int):
+			raise TypeError("Number of filters must be a positive integer")
+		if stride <= 0:
+			raise ValueError("Stride must be a positive integer")
+		if not isinstance(stride,int):
+			raise TypeError("Stride must be a positive integer")
 
 		self.padding = padding
 		self.filter_dim = filter_dim
-		self.F = np.random.normal( shape=filter_dim )
+		self.n_filters = n_filters
+		self.F = np.random.normal( size=(self.n_filters, )+ filter_dim )
 		self.stride = stride
 
+		if len(self.filter_dim) == 2:
+			self.conv = Convolution2D(self.input_dim,self.filter_dim,self.stride,self.padding)
+			self.output_dim = (self.n_filters,) + self.conv.output_shape
+		elif len(self.filter_dim) == 3:
+			self.conv = Convolution3D(self.input_dim,self.filter_dim,self.stride,self.padding)
+			self.output_dim = (self.n_filters,) + self.conv.output_shape[1:]
+		else:
+			raise ValueError("Filter should be more than 2/3 dimensional")
+		 
+
 	def feedforward(self, X):
-		pass
+		if X.shape != self.input_dim:
+			raise TypeError("Input dimension is not matching")
+
+		out = self.conv.convolve(X,self.F)
+		return out
 
 	def backpropogate(self, error):
-		pass
+		if error.shape != self.output_dim:
+			raise TypeError("Error dimension is not equal to the output dimension")
+
 
 	def update(self):
 		pass
