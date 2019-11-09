@@ -8,7 +8,9 @@ class Convolution():
 
 		self.input_shape = np.array( input_shape )
 		self.input_shape[self.input_shape.shape[0]-2:] += 2* padding
-
+		self.padded_input_shape = tuple(self.input_shape)
+		# print(self.padded_input_shape)
+		
 		self.window_shape = filter_shape
 		self.stride = self.gen_strides(stride)
 
@@ -34,28 +36,29 @@ class Convolution():
 		# print(self.in_shape,self.window_shape,self.window_strides,self.step_strides,self.outshape)
 		self.input_shape[self.input_shape.shape[0]-2:] -= 2* padding
 		self.input_shape = tuple(self.input_shape)
+		# print(self.padded_input_shape)
 		
 		self.padding = padding
 
 
-	def generate_windows(self, arr):
+	def generate_windows(self, arr, writeable=False):
 
 		nbytes = arr.strides[-1]  # size (bytes) of an element in `arr`
 
 		# number of bytes to step to populate sliding window view
 		strides = tuple(int(i) * nbytes for i in self.step_strides + self.window_strides)
 		# print(strides,self.outshape)
-		return as_strided(arr, shape=self.outshape, strides=strides, writeable=False)
+		return as_strided(arr, shape=self.outshape, strides=strides, writeable=writeable)
 
-	def pad(self,arr,padding):
+	def pad(self,arr):
 		pass
 
 	def gen_strides(self,stride):
 		pass
 
-	def zero_pad(self,in_shape,padding):
+	def zero_pad(self,in_shape):
 		padded_shape = np.array(in_shape)
-		padded_shape[padded_shape.shape[0]-2:] += 2*padding
+		padded_shape[padded_shape.shape[0]-2:] += 2*self.padding
 		padded_array = np.zeros( shape=padded_shape )
 		return padded_array
 
@@ -69,7 +72,7 @@ class Convolution2D(Convolution):
 		if( ( filter_shape != self.window_shape ).all() ):
 			raise TypeError("Filtered Shape must match with the initialized shape. Initialized:"+str(self.window_shape)+
 				" Given:"+str(filter_shape))
-		new_arr = self.pad(arr,self.padding)
+		new_arr = self.pad(arr)
 		# print(new_arr.shape)
 		# print(new_arr)
 		windows = self.generate_windows(new_arr)
@@ -101,10 +104,13 @@ class Convolution2D(Convolution):
 		else:
 			raise ValueError("Stride can be a list/tuple or an integer")
 
-	def pad(self,arr,padding):
-		padded_array = self.zero_pad(arr.shape,padding)
-		padded_array[padding:padding+arr.shape[0],padding:padding+arr.shape[1]] = arr
+	def pad(self,arr):
+		padded_array = self.zero_pad(arr.shape)
+		padded_array[self.padding:self.padding+arr.shape[0],self.padding:self.padding+arr.shape[1]] = arr
 		return padded_array
+
+	def remove_pad(self,arr):
+		return arr[self.padding:arr.shape[0]-self.padding,self.padding:arr.shape[1]-self.padding]
 
 class Convolution3D(Convolution):
 	def __init__(self,input_shape,filter_shape,stride,padding):
@@ -122,7 +128,7 @@ class Convolution3D(Convolution):
 			raise TypeError("Filtered Shape must match with the initialized shape. Initialized:"+str(self.window_shape)+
 				" Given:"+str(filter_shape))
 
-		new_arr = self.pad(arr,self.padding)
+		new_arr = self.pad(arr)
 		self.windows = self.generate_windows(new_arr)
 		print(self.windows.shape)
 		out = np.tensordot(filters,self.windows,axes=([1,2,3],[3,4,5]))
@@ -140,11 +146,17 @@ class Convolution3D(Convolution):
 
 		return out[:,0,:,:]
 
-	def pad(self,arr,padding):
-		padded_array = self.zero_pad(arr.shape,padding)
+	def pad(self,arr):
+		padding = self.padding
+		padded_array = self.zero_pad(arr.shape)
 		# print(padded_array.shape)
 		padded_array[:,padding:padding+arr.shape[1],padding:padding+arr.shape[2]] = arr
 		return padded_array
+
+	def remove_pad(self,arr):
+		padding = self.padding
+		return arr[:,padding:arr.shape[1]-padding,padding:arr.shape[2]-padding]
+
 
 	def gen_strides(self,stride):
 		if isinstance(stride,(list,tuple)):
@@ -159,7 +171,7 @@ class Convolution3D(Convolution):
 
 
 class ConvolutionalLayer(Layer):
-	def __init__(self, input_dim,filter_dim, n_filters = 1 , stride = 1, padding = 0):
+	def __init__(self, input_dim,filter_dim, n_filters = 1 , stride = 1, padding = 0, lr=0.01):
 
 		self.input_dim = input_dim
 		
@@ -175,12 +187,15 @@ class ConvolutionalLayer(Layer):
 			raise ValueError("Stride must be a positive integer")
 		if not isinstance(stride,int):
 			raise TypeError("Stride must be a positive integer")
+		if not isinstance(lr,float) or lr <= 0:
+			raise TypeError("Learning rate must be a positive real value")
 
 		self.padding = padding
 		self.filter_dim = filter_dim
 		self.n_filters = n_filters
 		self.F = np.random.normal( size=(self.n_filters, )+ filter_dim )
 		self.stride = stride
+		self.lr = lr
 
 		if len(self.filter_dim) == 2:
 			self.conv = Convolution2D(self.input_dim,self.filter_dim,self.stride,self.padding)
@@ -203,8 +218,26 @@ class ConvolutionalLayer(Layer):
 		if error.shape != self.output_dim:
 			raise TypeError("Error dimension is not equal to the output dimension")
 
+		self.grad_F = self.conv.gradient(error)
+		error_gradients = np.zeros( shape=self.conv.padded_input_shape )
+		windows = self.conv.generate_windows( error_gradients, writeable=True )
+		if len(self.filter_dim) == 3:
+			windows = windows[0]
+		# print(windows.shape)
+		print(error_gradients.shape)
+		print(self.input_dim)
+		# print(self.conv.windows.shape)
+		for i in range(self.n_filters):
+			filt = self.F[i]
+			err = error[i]
+			for j in range(err.shape[0]):
+				for k in range(err.shape[1]):
+					# print(error_gradients[0,0,-1])
+					windows[j,k] += filt * err[j,k]	
+
+		return self.conv.remove_pad(error_gradients)
 
 	def update(self):
-		pass
+		self.F -= self.lr * self.grad_F
 
 
