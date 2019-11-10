@@ -2,6 +2,7 @@ import numpy as np
 from .. import activations
 from ..layer import Layer
 from numpy.lib.stride_tricks import as_strided
+import math
 
 class Convolution():
 	def __init__(self, input_shape, filter_shape, stride, padding ):
@@ -64,7 +65,7 @@ class Convolution():
 
 class Convolution2D(Convolution):
 	
-	def convolve(self, arr, filters):
+	def convolve(self, arr, filters, biases):
 		if( arr.shape != self.input_shape ):
 			raise TypeError("Input Shape must match with the initialized shape. Initialized:"+str(self.input_shape)+
 				" Given:"+str(arr.shape))
@@ -72,6 +73,11 @@ class Convolution2D(Convolution):
 		if( ( filter_shape != self.window_shape ).all() ):
 			raise TypeError("Filtered Shape must match with the initialized shape. Initialized:"+str(self.window_shape)+
 				" Given:"+str(filter_shape))
+		if( filter_shape[0] != biases.shape[0] ):
+			raise TypeError("Number of biases should be equal to number of filters")
+		if( len(biases.shape) != 1 ):
+			raise TypeError("Biases should be single dimensional array of floats")
+
 		new_arr = self.pad(arr)
 		# print(new_arr.shape)
 		# print(new_arr)
@@ -80,6 +86,8 @@ class Convolution2D(Convolution):
 		print(windows.shape)
 		out = np.tensordot(filters,windows,axes=([1,2],[2,3]))
 		print(out.shape)
+		for i in range(biases.shape[0]):
+			out[i] += biases[i]
 		return out
 
 	def gradient(self,error):
@@ -90,8 +98,10 @@ class Convolution2D(Convolution):
 		channel_size = error.shape[1:]
 		print(error.shape,self.windows.shape)
 		out = np.tensordot(error,self.windows,axes=([1,2],[1,2]))
+		for i in range(n_filters):
+			grad_b = np.sum( error[i] )
 		
-		return out
+		return ( out, grad_b )
 
 	def gen_strides(self,stride):
 		if isinstance(stride,(list,tuple)):
@@ -119,7 +129,7 @@ class Convolution3D(Convolution):
 				+ str(filter_shape[0])+" )")
 		super().__init__(input_shape,filter_shape,stride,padding)
 
-	def convolve(self, arr, filters):
+	def convolve(self, arr, filters, biases):
 		if( arr.shape != self.input_shape ):
 			raise TypeError("Input Shape must match with the initialized shape. Initialized:"+str(self.input_shape)+
 				" Given:"+str(arr.shape))
@@ -127,12 +137,19 @@ class Convolution3D(Convolution):
 		if( (filter_shape != self.window_shape).all() ):
 			raise TypeError("Filtered Shape must match with the initialized shape. Initialized:"+str(self.window_shape)+
 				" Given:"+str(filter_shape))
+		if( filter_shape[0] != biases.shape[0] ):
+			raise TypeError("Number of biases should be equal to number of filters")
+		if( len(biases.shape) != 1 ):
+			raise TypeError("Biases should be single dimensional array of floats")
 
 		new_arr = self.pad(arr)
 		self.windows = self.generate_windows(new_arr)
 		print(self.windows.shape)
 		out = np.tensordot(filters,self.windows,axes=([1,2,3],[3,4,5]))
-		print(out.shape)
+		# print(out.shape)
+		for i in range(biases.shape[0]):
+			out[i] += biases[i]
+
 		return out[:,0,:,:]
 
 	def gradient(self,error):
@@ -141,10 +158,12 @@ class Convolution3D(Convolution):
 			raise TypeError("The dimension of error is not as expected")
 		n_filters = error.shape[0]
 		channel_size = error.shape[1:]
-		print(error.shape,self.windows.shape)
+		# print(error.shape,self.windows.shape)
 		out = np.tensordot(error,self.windows,axes=([1,2],[1,2]))
+		for i in range(n_filters):
+			grad_b = np.sum( error[i] )
 
-		return out[:,0,:,:]
+		return ( out[:,0,:,:], grad_b )
 
 	def pad(self,arr):
 		padding = self.padding
@@ -194,6 +213,7 @@ class ConvolutionalLayer(Layer):
 		self.filter_dim = filter_dim
 		self.n_filters = n_filters
 		self.F = np.random.normal( size=(self.n_filters, )+ filter_dim )
+		self.bias = np.random.normal( size=self.n_filters )
 		self.stride = stride
 		self.lr = lr
 
@@ -211,14 +231,15 @@ class ConvolutionalLayer(Layer):
 		if X.shape != self.input_dim:
 			raise TypeError("Input dimension is not matching")
 
-		out = self.conv.convolve(X,self.F)
+		out = self.conv.convolve(X,self.F,self.bias)
 		return out
 
 	def backpropogate(self, error):
 		if error.shape != self.output_dim:
 			raise TypeError("Error dimension is not equal to the output dimension")
 
-		self.grad_F = self.conv.gradient(error)
+		self.grad_F, self.grad_b = self.conv.gradient(error)
+
 		error_gradients = np.zeros( shape=self.conv.padded_input_shape )
 		windows = self.conv.generate_windows( error_gradients, writeable=True )
 		if len(self.filter_dim) == 3:
@@ -239,5 +260,105 @@ class ConvolutionalLayer(Layer):
 
 	def update(self):
 		self.F -= self.lr * self.grad_F
+		self.bias -= self.lr * self.grad_b
 
 
+class PoolingLayer(Layer):
+	def __init__(self, input_shape, window_shape ):
+		if len(window_shape) != 2:
+			raise TypeError("Window size should be 2 dimensional")
+
+		self.input_shape = input_shape
+		self.window_shape = window_shape
+		
+		single_in_shape = self.input_shape[-2:]
+		
+		if len(self.input_shape) == 3:
+			self.n_dim = self.input_shape[0]
+		else:
+			self.n_dim = 1
+
+		self.output_shape = self.input_shape[:-2] + ( math.ceil(single_in_shape[0]/window_shape[0]), 
+					math.ceil(single_in_shape[1]/window_shape[1]) )
+
+	def get_window(self, arr, x, y):
+		x_start = x*self.window_shape[0]
+		y_start = y*self.window_shape[1]
+		return arr[x_start:x_start+self.window_shape[0], y_start:y_start+self.window_shape[1]]
+
+	def feedforward( self, X ):
+		pass
+
+	def backpropogate(self, error):
+		pass
+
+	def update(self):
+		pass
+
+class MaxPoolingLayer(PoolingLayer):
+
+	def feedforward(self, X):
+
+		out = np.zeros( shape=self.output_shape )
+		self.mem = np.zeros( shape=self.output_shape, dtype=int )
+
+		for i in range(self.n_dim):
+			for j in range(self.output_shape[-2]):
+				for k in range(self.output_shape[-1]):
+					window = self.get_window(X[i],j,k)
+					self.mem[i,j,k] = np.argmax( window )
+					out[i,j,k] = window.flat[ self.mem[i,j,k] ]
+
+		return out
+
+	def backpropogate(self, error):
+		if error.shape != self.output_shape:
+			raise TypeError("Error dimension should be equal to the output dimension")
+
+		out = np.zeros( shape=input_shape )
+
+		for i in range(self.n_dim):
+			for j in range(self.output_shape[-2]):
+				x_start = j * self.window_shape[0]
+				for k in range(self.output_shape[-1]):
+					y_start = k * self.window_shape[1]
+					out_x = x_start + (self.mem[i,j,k]/self.window_shape[0])
+					out_y = y_start + (self.mem[i,j,k]%self.window_shape[0])
+					out[i,out_x,out_y] = error[i,j,k]
+
+		return out
+
+class AveragePoolingLayer(PoolingLayer):
+
+	def feedforward(self,X):
+		out = np.zeros( shape=self.output_shape )
+
+		for i in range(self.n_dim):
+			for j in range(self.output_shape[-2]):
+				for k in range(self.output_shape[-1]):
+					out[i,j,k] = np.average( self.get_window(X[i],j,k))
+
+		return out 
+
+	def fill_window(self, arr, x, y, fill_value):
+		x_start = x*self.window_shape[0]
+		y_start = y*self.window_shape[1]
+		arr[x_start:x_start+self.window_shape[0], y_start:y_start+self.window_shape[1]] = fill_value
+		return arr
+
+	def backpropogate(self, error):
+		if error.shape != self.output_shape:
+			raise TypeError("Error dimension should be equal to the output dimension")
+
+		out = np.zeros( shape= input_shape )
+		size = self.output_shape[-2] * self.output_shape[-1]
+
+		averaged_error = error / size
+
+		for i in range(self.n_dim):
+			for j in range(self.output_shape[-2]):
+				for k in range(self.output_shape[-1]):
+					# Bug... Edge case will produce problems. Unnecessary averaging in some cases
+					out[i] = self.fill_window( out[i], j, k, averaged_error[i,j,k] )
+
+		return out
