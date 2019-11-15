@@ -1,7 +1,12 @@
 import numpy as np
 from .layer import Layer
+import scipy
 
 class Activation(Layer):
+	def __init__(self,input_shape):
+		self.input_shape = input_shape
+		self.output_shape = input_shape
+		
 	def _apply_activation( self, before_activation ):
 		pass
 
@@ -22,6 +27,7 @@ class DifferentiableActivation(Activation):
 		pass
 
 	def backpropogate( self, error ):
+		# print("activation layer error={}".format(error))
 		return error * self.gradient( self.before_activation )
 
 	# def propogate_error( self, before_activation, error ):
@@ -37,6 +43,7 @@ class ReLU(DifferentiableActivation):
 		cpy = np.array( before_activation )
 		cpy[ before_activation < 0 ] = 0
 		cpy[ before_activation >= 0 ] = 1
+		# print(cpy)
 		return cpy	
 
 class Signum(Activation):
@@ -56,16 +63,31 @@ class Linear(DifferentiableActivation):
 class Sigmoid(DifferentiableActivation):
 
 	def _apply_activation( self, before_activation ):
-		return 1/( 1+np.exp(-before_activation) )
+		# print("before activation sigmoid = {}".format(before_activation))
+		return scipy.special.expit( before_activation )
+		# return 1/( 1+np.exp(-before_activation) )
 
 	def gradient( self, before_activation ):
 		sigma = self._apply_activation( before_activation )
+		# print("sigmoid = {}".format(sigma))
 		return sigma*(1-sigma)
 
+class Softmax(DifferentiableActivation):
+	def _apply_activation( self, before_activation ):
+		# print("before activation softmax = {}".format(before_activation))
+		out = scipy.special.softmax( before_activation )
+		# print("after activation softmax = {}".format(out))
+		return out
+	
+	def gradient( self, before_activation ):
+		sigma = self._apply_activation( before_activation )
+		# print("softmax = {}".format(sigma))
+		return sigma*(1-sigma)
 relu = ReLU
 signum = Signum
 linear = Linear
 sigmoid = Sigmoid
+softmax = Softmax
 
 def get(identifier):
 	d = globals()
