@@ -78,12 +78,14 @@ def read_all_labels( filename ):
 #exit()
 #
 parser = argparse.ArgumentParser( description="parse" )
-parser.add_argument('-e','--epochs'  , type=int  , default=3   , help="number of epochs"       )
-parser.add_argument('-T','--train'   , type=int  , default=100 , help="number of train samples")
-parser.add_argument('-t','--test'    , type=int  , default=30  , help="number of test samples" )
-parser.add_argument('-r','--rate'    , type=float, default=0.01, help="learning rate"          )
-parser.add_argument('-s1','--stride1', type=int  , default=1   , help="set stride for 1st cnn" )
-parser.add_argument('-s2','--stride2', type=int  , default=1   , help="set stride for 2nd cnn" )
+parser.add_argument('-e','--epochs'    , type=int  , default=3   , help="number of epochs"                  )
+parser.add_argument('-T','--train'     , type=int  , default=100 , help="number of train samples"           )
+parser.add_argument('-t','--test'      , type=int  , default=30  , help="number of test samples"            )
+parser.add_argument('-r','--rate'      , type=float, default=0.01, help="learning rate"                     )
+parser.add_argument('-s1','--stride1'  , type=int  , default=1   , help="set stride for 1st cnn"            )
+parser.add_argument('-s2','--stride2'  , type=int  , default=1   , help="set stride for 2nd cnn"            )
+parser.add_argument('-nf1','--nfilter1', type=int  , default=8   , help="set number of filters for 1st cnn" )
+parser.add_argument('-nf2','--nfilter2', type=int  , default=8   , help="set number of filters for 2nd cnn" )
 args = parser.parse_args()
 
 v_lr = args.rate
@@ -92,8 +94,10 @@ train_n = args.train
 test_n = args.test
 st1 = args.stride1
 st2 = args.stride2
+nf1 = args.nfilter1
+nf2 = args.nfilter2
 
-ustring = "{}R_{}E_{}TR_{}TE_{}{}S_{}".format(v_lr,n_epochs,train_n,test_n,st1,st2,time.strftime("%d_%m_%y_%H_%M_%S"))
+ustring = "{}R_{}E_{}TR_{}TE_{}{}S_{}_{}F_{}".format(v_lr,n_epochs,train_n,test_n,st1,st2,nf1,nf2,time.strftime("%d_%m_%y_%H_%M_%S"))
 print(ustring)
 
 # print(v_lr,n_epochs,train_n,test_n,st1,st2)
@@ -107,11 +111,11 @@ test_y = total_dataset["tey"][:test_n]
 print(test_x.shape)
 ## Constructing the network
 network = NeuralNet( train_x.shape[1:] )
-layer = ConvolutionalLayer( train_x.shape[1:], filter_dim=(5,5), n_filters=8, stride=st1, padding=0, lr=v_lr )
+layer = ConvolutionalLayer( train_x.shape[1:], filter_dim=(5,5), n_filters=nf1, stride=st1, padding=0, lr=v_lr )
 network.add(layer)
 layer = activations.Sigmoid( layer.output_dim )
 network.add(layer)
-layer = ConvolutionalLayer( layer.output_shape, filter_dim=(8,5,5), n_filters=8, stride=st2, padding=0, lr = v_lr )
+layer = ConvolutionalLayer( layer.output_shape, filter_dim=(nf1,3,3), n_filters=nf2, stride=st2, padding=0, lr = v_lr )
 network.add(layer)
 layer = activations.Sigmoid( layer.output_dim )
 network.add(layer)

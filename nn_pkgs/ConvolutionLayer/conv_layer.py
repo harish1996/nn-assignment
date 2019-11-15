@@ -241,7 +241,7 @@ class ConvolutionalLayer(Layer):
 	def backpropogate(self, error):
 		if error.shape != self.output_dim:
 			raise TypeError("Error dimension is not equal to the output dimension {} and {}".format(error.shape,self.output_dim))
-
+		# print("conv layer error = {}".format(error))
 		self.grad_F, self.grad_b = self.conv.gradient(error)
 
 		error_gradients = np.zeros( shape=self.conv.padded_input_shape )
@@ -323,7 +323,7 @@ class MaxPoolingLayer(PoolingLayer):
 
 		out = np.zeros( shape=self.input_shape )
 		# print(out.shape)
-
+		# print("max pooling error = {}".format(error))
 		for i in range(self.n_dim):
 			for j in range(self.output_shape[-2]):
 				x_start = j * self.window_shape[0]
@@ -332,7 +332,8 @@ class MaxPoolingLayer(PoolingLayer):
 					out_x = int(x_start + (self.mem[i,j,k]/self.window_shape[0])) - 1
 					out_y = int(y_start + (self.mem[i,j,k]%self.window_shape[0])) - 1
 					# print(i,out_x,out_y)
-					out[i,out_x,out_y] = error[i,j,k]
+					if out_x < out.shape[1] and out_y < out.shape[2]:
+						out[i,out_x,out_y] = error[i,j,k]
 
 		return out
 
@@ -387,6 +388,7 @@ class UnwrapLayer(Layer):
 	def backpropogate(self,error):
 		if error.shape != self.output_shape:
 			raise TypeError("Error shape {} is not matching with the output shape {}".format(error.shape,self.output_shape))
+		# print("unwrap layer error= {}".format(error))
 		return error.reshape(self.input_shape)
 
 class NeuralNet:
@@ -410,7 +412,7 @@ class NeuralNet:
 
 		for i in range(len(self.layers)):
 			feed = self.layers[i].feedforward( feed )
-
+	
 		self.out = feed 
 		return self.out 
 
@@ -418,6 +420,7 @@ class NeuralNet:
 		self.loss.set_output(Y)
 
 		loss = self.loss.feedforward(self.out)
+		# print("loss={}".format(loss))
 		error = self.loss.backpropogate(None)
 
 		for i in range(len(self.layers)-1,-1,-1):
@@ -425,23 +428,26 @@ class NeuralNet:
 
 		for i in range(len(self.layers)):
 			self.layers[i].update()
+		return loss
 
 	def _fit_one_epoch( self, X, Y, shuffle=True, verbose= True ):
 
 		shuffle_indices = np.random.permutation(X.shape[0])
 		out = np.zeros_like(Y)
+		loss = 0
 		# print(Y)
 		if verbose:
 			pbar = tqdm.tqdm( total=shuffle_indices.shape[0], unit="examples" )
 
 		for i in range(shuffle_indices.shape[0]):
 			sample_out = self.feedforward( X[i] )
+			# print(sample_out)
 			# print(out.shape)
 			out[i] = sample_out
-			self.backpropogate( Y[i] )
+			loss += self.backpropogate( Y[i] )
 			if verbose:
 				pbar.update(1)
-
+		print("Loss is {}".format(loss))
 		return out
 
 	def fit( self, X, Y, epochs, shuffle=True, verbose=True ):
@@ -456,8 +462,15 @@ class NeuralNet:
 
 		return out
 
-	def predict( self, X ):
+	def _predict_one_sample( self, X ):
 		return self.feedforward(X)
+
+	def predict( self, X ):
+		out = np.zeros(shape=(X.shape[0],self.out.shape[1]))
+		#print("outshape is "+str(out.shape))
+		for i in range(X.shape[0]):
+			out[i] = self._predict_one_sample(X[i])
+		return out
 
 
 

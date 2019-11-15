@@ -94,8 +94,7 @@ class SinglePerceptronLayer(Layer):
 	def __init__(self, input_size, nodes, initializer = "zeros", lr = 0.01 ):
 		self.input_size = input_size
 		self.nodes = nodes
-		self.output_shape = self.nodes
-
+		self.output_shape = nodes
 		self.W = np.random.normal( size= (nodes,input_size+1) ) #set of 0 vectors
 
 		self.lr = lr
@@ -116,7 +115,7 @@ class SinglePerceptronLayer(Layer):
 		return self.before_activation
 
 	def backpropogate( self, error ):
-		
+		# print("slp layer error={}".format(error))		
 		self.update_weights = error.T.dot(self.X)
 
 		self.error = error.dot( self.W[:,1:] )
