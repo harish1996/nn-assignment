@@ -2,6 +2,10 @@ import numpy as np
 from .layer import Layer
 
 class Activation(Layer):
+	def __init__(self,input_shape):
+		self.input_shape = input_shape
+		self.output_shape = input_shape
+		
 	def _apply_activation( self, before_activation ):
 		pass
 

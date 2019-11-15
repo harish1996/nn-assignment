@@ -3,6 +3,8 @@ from .. import activations
 from ..layer import Layer
 from numpy.lib.stride_tricks import as_strided
 import math
+import tqdm
+from ..loss import Loss
 
 class Convolution():
 	def __init__(self, input_shape, filter_shape, stride, padding ):
@@ -31,7 +33,7 @@ class Convolution():
 		self.outshape = self.outshape + tuple(self.input_shape)[:-len(self.stride)] + tuple(self.window_shape)
 		# print("Outshape"+str(self.outshape[:len(self.stride)]))
 
-		print(self.window_strides,self.step_strides,self.outshape)
+		# print(self.window_strides,self.step_strides,self.outshape)
 
 		self.output_shape = self.outshape[:len(self.stride)]
 		# print(self.in_shape,self.window_shape,self.window_strides,self.step_strides,self.outshape)
@@ -73,7 +75,7 @@ class Convolution2D(Convolution):
 		if( ( filter_shape != self.window_shape ).all() ):
 			raise TypeError("Filtered Shape must match with the initialized shape. Initialized:"+str(self.window_shape)+
 				" Given:"+str(filter_shape))
-		if( filter_shape[0] != biases.shape[0] ):
+		if( filters.shape[0] != biases.shape[0] ):
 			raise TypeError("Number of biases should be equal to number of filters")
 		if( len(biases.shape) != 1 ):
 			raise TypeError("Biases should be single dimensional array of floats")
@@ -81,23 +83,23 @@ class Convolution2D(Convolution):
 		new_arr = self.pad(arr)
 		# print(new_arr.shape)
 		# print(new_arr)
-		windows = self.generate_windows(new_arr)
+		self.windows = self.generate_windows(new_arr)
 		# print(filters)
-		print(windows.shape)
-		out = np.tensordot(filters,windows,axes=([1,2],[2,3]))
-		print(out.shape)
+		# print(windows.shape)
+		out = np.tensordot(filters,self.windows,axes=([1,2],[2,3]))
+		# print(out.shape)
 		for i in range(biases.shape[0]):
 			out[i] += biases[i]
 		return out
 
 	def gradient(self,error):
 		# print("error shape ="+str(error.shape)+" output shape="+str(self.output_shape))
-		if error.shape[1:] != self.output_shape[1:]:
-			raise TypeError("The dimension of error is not as expected")
+		if error.shape[1:] != self.output_shape:
+			raise TypeError("The dimension of error {} is not as expected {}".format(error.shape[1:],self.output_shape[1:]))
 		n_filters = error.shape[0]
 		channel_size = error.shape[1:]
-		print(error.shape,self.windows.shape)
-		out = np.tensordot(error,self.windows,axes=([1,2],[1,2]))
+		# print(error.shape,self.windows.shape)
+		out = np.tensordot(error,self.windows,axes=([1,2],[0,1]))
 		for i in range(n_filters):
 			grad_b = np.sum( error[i] )
 		
@@ -137,14 +139,14 @@ class Convolution3D(Convolution):
 		if( (filter_shape != self.window_shape).all() ):
 			raise TypeError("Filtered Shape must match with the initialized shape. Initialized:"+str(self.window_shape)+
 				" Given:"+str(filter_shape))
-		if( filter_shape[0] != biases.shape[0] ):
-			raise TypeError("Number of biases should be equal to number of filters")
+		if( filters.shape[0] != biases.shape[0] ):
+			raise TypeError("Number of biases should be equal to number of filters"+str(filters.shape)+" and "+str(biases.shape))
 		if( len(biases.shape) != 1 ):
 			raise TypeError("Biases should be single dimensional array of floats")
 
 		new_arr = self.pad(arr)
 		self.windows = self.generate_windows(new_arr)
-		print(self.windows.shape)
+		# print(self.windows.shape)
 		out = np.tensordot(filters,self.windows,axes=([1,2,3],[3,4,5]))
 		# print(out.shape)
 		for i in range(biases.shape[0]):
@@ -220,12 +222,14 @@ class ConvolutionalLayer(Layer):
 		if len(self.filter_dim) == 2:
 			self.conv = Convolution2D(self.input_dim,self.filter_dim,self.stride,self.padding)
 			self.output_dim = (self.n_filters,) + self.conv.output_shape
+			# print(self.conv.output_shape)
 		elif len(self.filter_dim) == 3:
 			self.conv = Convolution3D(self.input_dim,self.filter_dim,self.stride,self.padding)
 			self.output_dim = (self.n_filters,) + self.conv.output_shape[1:]
 		else:
 			raise ValueError("Filter should be more than 2/3 dimensional")
 		 
+		# print(self.output_dim)
 
 	def feedforward(self, X):
 		if X.shape != self.input_dim:
@@ -236,7 +240,7 @@ class ConvolutionalLayer(Layer):
 
 	def backpropogate(self, error):
 		if error.shape != self.output_dim:
-			raise TypeError("Error dimension is not equal to the output dimension")
+			raise TypeError("Error dimension is not equal to the output dimension {} and {}".format(error.shape,self.output_dim))
 
 		self.grad_F, self.grad_b = self.conv.gradient(error)
 
@@ -245,8 +249,8 @@ class ConvolutionalLayer(Layer):
 		if len(self.filter_dim) == 3:
 			windows = windows[0]
 		# print(windows.shape)
-		print(error_gradients.shape)
-		print(self.input_dim)
+		# print(error_gradients.shape)
+		# print(self.input_dim)
 		# print(self.conv.windows.shape)
 		for i in range(self.n_filters):
 			filt = self.F[i]
@@ -280,6 +284,8 @@ class PoolingLayer(Layer):
 
 		self.output_shape = self.input_shape[:-2] + ( math.ceil(single_in_shape[0]/window_shape[0]), 
 					math.ceil(single_in_shape[1]/window_shape[1]) )
+
+		self.output_dim = self.output_shape
 
 	def get_window(self, arr, x, y):
 		x_start = x*self.window_shape[0]
@@ -315,15 +321,17 @@ class MaxPoolingLayer(PoolingLayer):
 		if error.shape != self.output_shape:
 			raise TypeError("Error dimension should be equal to the output dimension")
 
-		out = np.zeros( shape=input_shape )
+		out = np.zeros( shape=self.input_shape )
+		# print(out.shape)
 
 		for i in range(self.n_dim):
 			for j in range(self.output_shape[-2]):
 				x_start = j * self.window_shape[0]
 				for k in range(self.output_shape[-1]):
 					y_start = k * self.window_shape[1]
-					out_x = x_start + (self.mem[i,j,k]/self.window_shape[0])
-					out_y = y_start + (self.mem[i,j,k]%self.window_shape[0])
+					out_x = int(x_start + (self.mem[i,j,k]/self.window_shape[0])) - 1
+					out_y = int(y_start + (self.mem[i,j,k]%self.window_shape[0])) - 1
+					# print(i,out_x,out_y)
 					out[i,out_x,out_y] = error[i,j,k]
 
 		return out
@@ -362,3 +370,94 @@ class AveragePoolingLayer(PoolingLayer):
 					out[i] = self.fill_window( out[i], j, k, averaged_error[i,j,k] )
 
 		return out
+
+class UnwrapLayer(Layer):
+	def __init__(self, input_shape ):
+		self.input_shape = input_shape
+		self.output_shape = 1
+		for i in range(len(input_shape)):
+			self.output_shape *= input_shape[i]
+		self.output_shape = (1,self.output_shape)
+
+	def feedforward(self,X):
+		if X.shape != self.input_shape:
+			raise TypeError("Input shape is not matching with the configured size")
+		return X.reshape((1,-1))
+
+	def backpropogate(self,error):
+		if error.shape != self.output_shape:
+			raise TypeError("Error shape {} is not matching with the output shape {}".format(error.shape,self.output_shape))
+		return error.reshape(self.input_shape)
+
+class NeuralNet:
+	def __init__(self, input_shape ):
+		self.input_shape = input_shape
+		self.layers = []
+
+	def add( self, layer ):
+		if isinstance(layer,Layer):
+			self.layers.append(layer)
+
+	def add_loss(self, loss ):
+		if isinstance(loss,Loss):
+			self.loss = loss
+
+	def feedforward(self,X):
+		if X.shape != self.input_shape:
+			raise TypeError("Input shape {} is not matching with configured shape {}".format(X.shape,self.input_shape))
+
+		feed = X
+
+		for i in range(len(self.layers)):
+			feed = self.layers[i].feedforward( feed )
+
+		self.out = feed 
+		return self.out 
+
+	def backpropogate( self, Y ):
+		self.loss.set_output(Y)
+
+		loss = self.loss.feedforward(self.out)
+		error = self.loss.backpropogate(None)
+
+		for i in range(len(self.layers)-1,-1,-1):
+			error = self.layers[i].backpropogate( error )
+
+		for i in range(len(self.layers)):
+			self.layers[i].update()
+
+	def _fit_one_epoch( self, X, Y, shuffle=True, verbose= True ):
+
+		shuffle_indices = np.random.permutation(X.shape[0])
+		out = np.zeros_like(Y)
+		# print(Y)
+		if verbose:
+			pbar = tqdm.tqdm( total=shuffle_indices.shape[0], unit="examples" )
+
+		for i in range(shuffle_indices.shape[0]):
+			sample_out = self.feedforward( X[i] )
+			# print(out.shape)
+			out[i] = sample_out
+			self.backpropogate( Y[i] )
+			if verbose:
+				pbar.update(1)
+
+		return out
+
+	def fit( self, X, Y, epochs, shuffle=True, verbose=True ):
+
+		if verbose:
+			pbar = tqdm.tqdm( total=epochs, unit="epochs" )
+
+		for i in range(epochs):
+			out = self._fit_one_epoch( X,Y, shuffle )
+			if verbose:
+				pbar.update(1)
+
+		return out
+
+	def predict( self, X ):
+		return self.feedforward(X)
+
+
+

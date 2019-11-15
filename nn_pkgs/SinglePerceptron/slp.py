@@ -94,6 +94,7 @@ class SinglePerceptronLayer(Layer):
 	def __init__(self, input_size, nodes, initializer = "zeros", lr = 0.01 ):
 		self.input_size = input_size
 		self.nodes = nodes
+		self.output_shape = self.nodes
 
 		self.W = np.random.normal( size= (nodes,input_size+1) ) #set of 0 vectors
 

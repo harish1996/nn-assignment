@@ -1,6 +1,9 @@
 from nn_pkgs.MLP.mlp import MultiLayerPerceptron
 from nn_pkgs import activations
 from nn_pkgs import datasets
+from nn_pkgs.loss import MSE
+from nn_pkgs.ConvolutionLayer.conv_layer import ConvolutionalLayer,MaxPoolingLayer
+from nn_pkgs.ConvolutionalLayer.conv_layer import NeuralNet
 
 import numpy as np
 from sklearn.preprocessing import OneHotEncoder
