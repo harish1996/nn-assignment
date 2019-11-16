@@ -404,7 +404,14 @@ class NeuralNet:
 		if isinstance(loss,Loss):
 			self.loss = loss
 
+	def get_layer(self, layer):
+		return self.layers[layer]
+
 	def feedforward(self,X):
+		# print("length is {}".format(type(self.input_shape)))
+		if len(X.shape) == 1 and isinstance(self.input_shape,int):
+			self.input_shape = ( self.input_shape ,)
+			# print(self.input_shape)
 		if X.shape != self.input_shape:
 			raise TypeError("Input shape {} is not matching with configured shape {}".format(X.shape,self.input_shape))
 
@@ -414,7 +421,23 @@ class NeuralNet:
 			feed = self.layers[i].feedforward( feed )
 	
 		self.out = feed 
-		return self.out 
+		return self.out
+
+	def feedforward_upto(self, X, upto= None ):
+		if X.shape != self.input_shape:
+			raise TypeError(("Input shape {} is not matching with"+ 
+				"configured shape {}").format(X.shape,self.input_shape))
+		if upto is None:
+			upto = len(self.layers)
+		if upto < 0 or upto > len(self.layers):
+			raise ValueError("Layer no. {} doesn't exist".format(layer))
+
+		feed = X
+
+		for i in range(upto):
+			feed = self.layers[i].feedforward( feed )
+
+		return feed
 
 	def backpropogate( self, Y ):
 		self.loss.set_output(Y)
@@ -447,7 +470,7 @@ class NeuralNet:
 			loss += self.backpropogate( Y[i] )
 			if verbose:
 				pbar.update(1)
-		print("Loss is {}".format(loss))
+		print("Loss is {}".format(np.sum(loss)))
 		return out
 
 	def fit( self, X, Y, epochs, shuffle=True, verbose=True ):
@@ -465,12 +488,35 @@ class NeuralNet:
 	def _predict_one_sample( self, X ):
 		return self.feedforward(X)
 
-	def predict( self, X ):
+	def predict( self, X, verbose=True ):
+
+		if verbose:
+			pbar = tqdm.tqdm( total=X.shape[0], unit="samples" )
+
 		out = np.zeros(shape=(X.shape[0],self.out.shape[1]))
 		#print("outshape is "+str(out.shape))
 		for i in range(X.shape[0]):
 			out[i] = self._predict_one_sample(X[i])
+			if verbose:
+				pbar.update(1)
 		return out
+
+	def predict_with_loss(self, X, Y, verbose=True):
+		out = np.zeros( shape=(X.shape[0], self.out.shape[1] ) )
+		loss = np.zeros( shape=X.shape[0] )
+		if verbose:
+			pbar = tqdm.tqdm( total=X.shape[0], unit="samples" )
+
+		for i in range(X.shape[0]):
+			out[i] = self._predict_one_sample( X[i] )
+			self.loss.set_output(Y)
+
+			loss[i] = np.sum(self.loss.feedforward(self.out))
+			if verbose:
+				pbar.update(1)
+			# print("loss is {}".format(los))
+		return [ out, loss ]
+
 
 
 

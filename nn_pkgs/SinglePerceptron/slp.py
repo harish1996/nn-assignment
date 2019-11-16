@@ -92,6 +92,12 @@ class SinglePerceptron:
 class SinglePerceptronLayer(Layer):
 
 	def __init__(self, input_size, nodes, initializer = "zeros", lr = 0.01 ):
+		if isinstance(input_size,(tuple,list)):
+			if len(input_size) == 1:
+				input_size = input_size[0]
+			else:
+				raise NotImplementedError("Multidimensional Inputs not implemented yet."+
+				 "Use Unwrap Layer to unwrap the output instead")
 		self.input_size = input_size
 		self.nodes = nodes
 		self.output_shape = nodes
@@ -101,7 +107,8 @@ class SinglePerceptronLayer(Layer):
 
 
 	def feedforward( self,X ):
-
+		if len(X.shape) == 1:
+			X = X.reshape((1,-1))
 		assert( isinstance(X,np.ndarray) ),"X should be np.ndarray"
 		assert( X.shape[1] == self.input_size ),"Input size doesnt match"
 
