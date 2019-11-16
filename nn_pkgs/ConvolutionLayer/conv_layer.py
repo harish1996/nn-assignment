@@ -479,7 +479,7 @@ class NeuralNet:
 			pbar = tqdm.tqdm( total=epochs, unit="epochs" )
 
 		for i in range(epochs):
-			out = self._fit_one_epoch( X,Y, shuffle )
+			out = self._fit_one_epoch( X,Y, shuffle, verbose )
 			if verbose:
 				pbar.update(1)
 

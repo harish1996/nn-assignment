@@ -28,7 +28,13 @@ class DifferentiableActivation(Activation):
 
 	def backpropogate( self, error ):
 		# print("activation layer error={}".format(error))
-		return error * self.gradient( self.before_activation )
+		try:
+			ret = error * self.gradient( self.before_activation )
+		except RuntimeWarning:
+			print("DA:")
+			print(error,self.gradient,self.before_activation)
+			raise Exception("RuntimeWarning at DifferentiableActivation")
+		return ret
 
 	# def propogate_error( self, before_activation, error ):
 	# 	pass

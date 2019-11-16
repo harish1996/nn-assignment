@@ -22,7 +22,12 @@ class Loss(Layer):
 
 class MSE(Loss):
 	def loss_value( self, X ):
-		return 0.5*( X - self.actual)**2
+		try:
+			ret = 0.5*( X - self.actual)**2
+		except RuntimeWarning:
+			print(X,self.actual)
+			raise Exception("Encountered runtime warning at MSE")
+		return ret
 
 	def gradient( self ):
 		return ( self.pred - self.actual )

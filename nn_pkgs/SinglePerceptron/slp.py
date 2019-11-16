@@ -30,7 +30,7 @@ class SinglePerceptron:
 	def __init__(self, input_size, initializer = "zeros", activation = "linear", lr = 0.001 ):
 		self.input_size = input_size
 
-		self.W = np.random.normal( size= (input_size,1) ) #set of 0 vectors		
+		self.W = np.random.normal( size= (input_size,1), scale=0.001 ) #set of 0 vectors		
 		self.bias = np.random.normal( size=1 )
 
 		activation_class = activations.get(activation)
@@ -101,7 +101,7 @@ class SinglePerceptronLayer(Layer):
 		self.input_size = input_size
 		self.nodes = nodes
 		self.output_shape = nodes
-		self.W = np.random.normal( size= (nodes,input_size+1) ) #set of 0 vectors
+		self.W = np.random.normal( size= (nodes,input_size+1), scale=0.001 ) #set of 0 vectors
 
 		self.lr = lr
 

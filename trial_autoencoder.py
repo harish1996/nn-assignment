@@ -3,6 +3,8 @@ import argparse
 import time
 import pickle
 import numpy as np
+import sys
+
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.metrics import classification_report,confusion_matrix
 
@@ -101,7 +103,7 @@ scaled_test_x = scaler.transform( test_x )
 encoder = SparseAutoencoder( input_size=scaled_train_x.shape[1], hidden_size=40*40, lr=v_lr, 
 				sparsity=v_sparsity, penalty=v_penalty )
 
-encoder.fit( scaled_train_x, epochs=n_epochs )
+encoder.fit( scaled_train_x, epochs=n_epochs, verbose=True )
 
 
 reconstructed, loss = encoder.encode_decode( scaled_test_x )

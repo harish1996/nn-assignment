@@ -30,10 +30,10 @@ class SparseLayer(SinglePerceptronLayer):
 		# print("Sparse layer")
 		# print(self.before_activation,self.after_activation)
 		avg_act = np.mean(self.after_activation, axis=0)
-		# print(avg_act)
+		#print(avg_act)
 		extra_error = self.penalty *( ( -self.sparsity / (avg_act+epsilon) ) + ( (1-self.sparsity)/(1-avg_act+epsilon) ) )
 		error += extra_error
-		# print(error)
+		# print(extra_error)
 		return super().backpropogate( error )
 
 class SparseAutoencoder(object):
