@@ -12,7 +12,7 @@ class SparseLayer(SinglePerceptronLayer):
 		self.penalty = penalty
 		super().__init__( input_size, nodes, initializer, lr )
 		activation_class = activations.get(activation)
-		print(activation_class)
+		# print(activation_class)
 		if not issubclass(activation_class,activations.DifferentiableActivation):
 			raise TypeError("Invalid Activation {}".format(activation))
 		self.activation = activation_class( input_size )

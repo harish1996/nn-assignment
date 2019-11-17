@@ -107,13 +107,16 @@ test_x = total_dataset["test"][:test_n]
 scaler = StandardScaler()
 scaled_train_x = scaler.fit_transform( train_x )
 scaled_test_x = scaler.transform( test_x )
+# print( np.mean(test_x - scaled_test_x) )
+# exit()
 
+print("""*************************************** Training starts *****************""")
 encoder = SparseAutoencoder( input_size=scaled_train_x.shape[1], hidden_size=40*40, lr=v_lr, 
 				sparsity=v_sparsity, penalty=v_penalty )
 
 encoder.fit( scaled_train_x, epochs=n_epochs, bs=n_batch, verbose=False )
 
-
+print("***************************************** Training ends ********************")
 reconstructed, loss = encoder.encode_decode( scaled_test_x )
 
 text = "Average reconstruction error = {}".format(np.mean(loss))

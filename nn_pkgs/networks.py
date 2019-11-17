@@ -53,9 +53,10 @@ class NeuralNet:
 		loss = self.loss.feedforward(self.out)
 		# print("loss={}".format(loss))
 		error = self.loss.backpropogate(None)
-
+		
 		for i in range(len(self.layers)-1,-1,-1):
 			error = self.layers[i].backpropogate( error )
+			# print("layer{} error={}".format(i,error))
 
 		for i in range(len(self.layers)):
 			self.layers[i].update()
@@ -87,7 +88,7 @@ class NeuralNet:
 			pbar = tqdm.tqdm( total=epochs, unit="epochs" )
 
 		for i in range(epochs):
-			print(X.shape,Y.shape,bs)
+			# print(X.shape,Y.shape,bs)
 			out = self._fit_one_epoch( X,Y, shuffle=shuffle, verbose=verbose, bs=bs )
 			if verbose:
 				pbar.update(1)
@@ -134,7 +135,7 @@ class BatchNeuralNet(NeuralNet):
 	"""
 
 	def _check_shape_(self, actual_shape ):
-		print("_check_shape_={}".format(actual_shape))
+		# print("_check_shape_={}".format(actual_shape))
 		if isinstance(self.input_shape,int):
 			self.input_shape = (self.input_shape, )
 		if len(actual_shape) == 1:
@@ -167,7 +168,7 @@ class BatchNeuralNet(NeuralNet):
 		bs [default:1]         	- Batchsize
 		"""
 		start = 0
-		print(bs)
+		# print(bs)
 		total_size = X.shape[0]
 		end = bs if bs < total_size else total_size
 
@@ -184,13 +185,15 @@ class BatchNeuralNet(NeuralNet):
 			pbar = tqdm.tqdm( total= total_size, unit="examples" )
 		
 		while( start < total_size ):
-			print(start,end)
+			# print(start,end)
+			
 			# Taking out the current batch
 			batch_X = shuffled_X[start:end]
 			batch_Y = shuffled_Y[start:end]
-			print(batch_X.shape,batch_Y.shape)
+			# print(batch_X.shape,batch_Y.shape)
 			batch_out = self.feedforward( batch_X )
-
+			# print(batch_out)
+			
 			# Assigning the output to the corresponding places
 			out[ shuffle_indices[start:end] ] = batch_out
 
@@ -209,7 +212,7 @@ class BatchNeuralNet(NeuralNet):
 			if end >= total_size:
 				end = X.shape[0] - 1
 
-		print("Loss is {}".format(np.sum(loss)))
+		print("Loss is {}".format(loss))
 		return out
 
 	def predict(self, X, verbose=True):
@@ -232,8 +235,9 @@ class BatchNeuralNet(NeuralNet):
 		"""
 		out = self.feedforward(X)
 		self.loss.set_output(Y)
-		loss = self.loss.feedforward(X)
-
+		print(self.out,Y)
+		loss = self.loss.feedforward( out )
+		# print(loss)
 		return [ out, loss ]
 
 

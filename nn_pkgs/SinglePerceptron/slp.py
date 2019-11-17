@@ -128,13 +128,15 @@ class SinglePerceptronLayer(Layer):
 	def backpropogate( self, error ):
 		# print("slp layer error={}".format(error))		
 		self.update_weights = error.T.dot(self.X)
-
+		#print("backpropogating in slp error={}, self.X={}".format(error,self.X))
 		self.error = error.dot( self.W[:,1:] )
 
 		return self.error 
 
 	def update( self ):
+		# print("updating weights {}".format(self.W))
 		self.W -= self.lr * self.update_weights
+		# print("aftermath {}".format(self.W))
 
 	def predict( self, X ):
 		return self.feedforward(X)
