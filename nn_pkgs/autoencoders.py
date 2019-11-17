@@ -2,12 +2,12 @@ import numpy as np
 from . import activations
 from .layer import Layer
 from .SinglePerceptron.slp import SinglePerceptronLayer
-from .ConvolutionLayer.conv_layer import NeuralNet
+from .networks import BatchNeuralNet
 from .loss import MSE
 
 class SparseLayer(SinglePerceptronLayer):
 	
-	def __init__(self, input_size, nodes, initializer = "zeros", lr = 0.01, sparsity=0.5, penalty=1, activation="sigmoid" ):
+	def __init__(self, input_size, nodes, initializer = "glorot_normal", lr = 0.01, sparsity=0.5, penalty=1, activation="sigmoid" ):
 		self.sparsity = sparsity
 		self.penalty = penalty
 		super().__init__( input_size, nodes, initializer, lr )
@@ -36,24 +36,47 @@ class SparseLayer(SinglePerceptronLayer):
 		# print(extra_error)
 		return super().backpropogate( error )
 
-class SparseAutoencoder(object):
 
-	def __init__(self, input_size, hidden_size, lr=0.01, sparsity=0.5, penalty=1, activation="sigmoid"):
-		
+class SparseAutoencoder(object):
+	"""
+	Sparse Autoencoder, which creates an autoencoder with the encoding layer as a sparse layer
+	"""
+
+	def __init__(self, input_size, hidden_size, lr=0.01, sparsity=0.5, penalty=1):
+		"""
+		Constructor for Sparse Autoencoders
+
+		input_size	- Dimensionality of input
+		hidden_size	- Required Dimensionality of the hidden encoding layer
+		lr 		- Learning rate
+		sparsity 	- Required sparsity
+		penalty		- Penalty for sparsity constraint
+		"""
+
 		self.input_size = input_size
 		self.hidden_size = hidden_size
 		self.lr = lr
 
-		self.network = NeuralNet( self.input_size )
-		self.network.add( SparseLayer(input_size=(self.input_size,), nodes=self.hidden_size, initializer="normal",
+		self.network = BatchNeuralNet( self.input_size )
+		self.network.add( SparseLayer(input_size=(self.input_size,), nodes=self.hidden_size, initializer="glorot_normal",
 				lr = self.lr, sparsity=sparsity, penalty=penalty, activation=activation ) )
 		self.network.add( SinglePerceptronLayer( input_size=self.hidden_size, nodes=self.input_size,
-				initializer="normal", lr=lr ) )
+				initializer="glorot_normal", lr=lr ) )
 		self.network.add_loss( MSE() )
 
-	# Returns only the last fitted output
-	def fit(self, X, epochs, shuffle=True, verbose=True ):
-		return self.network.fit(X, X, epochs, shuffle, verbose)  
+	def fit(self, X, epochs, shuffle=True, bs=1, verbose=True ):
+		"""
+		Trains the Sparse Autoencoder.
+
+		X	- Input for training
+		epochs	- Number of epochs to be trained
+		shuffle	- If True, the input is shuffled during each epoch
+		bs	- Batch size
+		verbose	- If True, prints a progress bar while training
+
+		returns output for the corresponding input during the last epoch
+		"""
+		return self.network.fit(X, X, epochs, shuffle, bs, verbose)  
 
 	def predict(self, X):
 		return self.network.predict(X)

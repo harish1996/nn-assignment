@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from .. import activations
 from ..layer import Layer
+from .. import initializers
 # from ...LinearlySeperableGenerator import base_random
 
 
@@ -97,11 +98,14 @@ class SinglePerceptronLayer(Layer):
 				input_size = input_size[0]
 			else:
 				raise NotImplementedError("Multidimensional Inputs not implemented yet."+
-				 "Use Unwrap Layer to unwrap the output instead")
+				 "Use Unwrap Layer to unwrap the input instead")
+		
+		initializer = initializers.get(initializer)
 		self.input_size = input_size
 		self.nodes = nodes
 		self.output_shape = nodes
-		self.W = np.random.normal( size= (nodes,input_size+1), scale=0.001 ) #set of 0 vectors
+		self.W = initializer( size= (nodes,input_size+1) )
+		# self.W = np.random.normal( size= (nodes,input_size+1), scale=0.001 ) #set of 0 vectors
 
 		self.lr = lr
 
