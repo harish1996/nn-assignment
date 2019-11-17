@@ -1,6 +1,6 @@
 import numpy as np 
 
-def XavierNormal( size, loc, in_size=None, out_size=None, **kwargs ):
+def XavierNormal( size, loc=0, in_size=None, out_size=None, **kwargs ):
 	
 	if in_size is None or out_size is None:
 		denom = np.sum(size)
@@ -10,16 +10,16 @@ def XavierNormal( size, loc, in_size=None, out_size=None, **kwargs ):
 	std = np.sqrt( 2 / denom )
 	return Normal( size=size, loc=loc, scale= std)
 
-def Normal( size, loc, scale, **kwargs ):
+def Normal( size, loc=0, scale=1, **kwargs ):
 	return np.random.normal( size=size, loc=loc, scale= scale )
 
 def Zeros( size, **kwargs ):
 	return np.zeros( shape=size )
 
-def Uniform( size, loc, scale, **kwargs )
+def Uniform( size, loc=0, scale=1, **kwargs ):
 	return np.random.uniform( size=size, low=loc-scale, high=loc+scale )
 
-def XavierUniform( size, loc, in_size=None, out_size=None, **kwargs ):
+def XavierUniform( size, loc=0, in_size=None, out_size=None, **kwargs ):
 	if in_size is None or out_size is None:
 		denom = np.sum(size)
 	else:

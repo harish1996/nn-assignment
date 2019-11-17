@@ -9,7 +9,7 @@ from sklearn.metrics import classification_report,confusion_matrix
 from nn_pkgs.autoencoders import SparseAutoencoder
 
 
-def read_all_images( filename )
+def read_all_images( filename ):
 	return read_n_images( filename )
 
 def read_n_images( filename, n="all" ):
@@ -111,7 +111,7 @@ scaled_test_x = scaler.transform( test_x )
 encoder = SparseAutoencoder( input_size=scaled_train_x.shape[1], hidden_size=40*40, lr=v_lr, 
 				sparsity=v_sparsity, penalty=v_penalty )
 
-encoder.fit( scaled_train_x, epochs=n_epochs, bs=128, verbose=False )
+encoder.fit( scaled_train_x, epochs=n_epochs, bs=n_batch, verbose=False )
 
 
 reconstructed, loss = encoder.encode_decode( scaled_test_x )

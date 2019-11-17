@@ -1,5 +1,7 @@
 import numpy as np
-
+from .layer import Layer
+from .loss import Loss
+import tqdm
 
 class NeuralNet:
 	def __init__(self, input_shape ):
@@ -17,7 +19,8 @@ class NeuralNet:
 	def get_layer(self, layer):
 		return self.layers[layer]
 
-	def __check_shape( actual_shape ):
+	def _check_shape_(self, actual_shape ):
+		#print(type(self))
 		if len(actual_shape) == 1 and isinstance(self.input_shape,int):
 			self.input_shape = ( self.input_shape ,)
 			# print(self.input_shape)
@@ -30,7 +33,7 @@ class NeuralNet:
 
 	def feedforward_upto(self, X, upto= None ):
 
-		self.__check_shape( X.shape )
+		self._check_shape_( X.shape )
 
 		if upto is None:
 			upto = len(self.layers)
@@ -84,7 +87,8 @@ class NeuralNet:
 			pbar = tqdm.tqdm( total=epochs, unit="epochs" )
 
 		for i in range(epochs):
-			out = self._fit_one_epoch( X,Y, shuffle, verbose, bs )
+			print(X.shape,Y.shape,bs)
+			out = self._fit_one_epoch( X,Y, shuffle=shuffle, verbose=verbose, bs=bs )
 			if verbose:
 				pbar.update(1)
 
@@ -129,9 +133,11 @@ class BatchNeuralNet(NeuralNet):
 	Note: Don't use with layers which doesn't support batch size yet.
 	"""
 
-	def __check_shape( actual_shape ):
-		if len(actual_shape) == 1 and isinstance(self.input_shape,int):
-			self.input_shape = ( self.input_shape ,)
+	def _check_shape_(self, actual_shape ):
+		print("_check_shape_={}".format(actual_shape))
+		if isinstance(self.input_shape,int):
+			self.input_shape = (self.input_shape, )
+		if len(actual_shape) == 1:
 			batches = 1
 			# print(self.input_shape)
 		if len(actual_shape) != len(self.input_shape):
@@ -161,9 +167,9 @@ class BatchNeuralNet(NeuralNet):
 		bs [default:1]         	- Batchsize
 		"""
 		start = 0
-		end = bs
-
+		print(bs)
 		total_size = X.shape[0]
+		end = bs if bs < total_size else total_size
 
 		# Generates shuffle
 		shuffle_indices = np.random.permutation(total_size)
@@ -178,17 +184,18 @@ class BatchNeuralNet(NeuralNet):
 			pbar = tqdm.tqdm( total= total_size, unit="examples" )
 		
 		while( start < total_size ):
-
+			print(start,end)
 			# Taking out the current batch
 			batch_X = shuffled_X[start:end]
 			batch_Y = shuffled_Y[start:end]
-
+			print(batch_X.shape,batch_Y.shape)
 			batch_out = self.feedforward( batch_X )
 
 			# Assigning the output to the corresponding places
 			out[ shuffle_indices[start:end] ] = batch_out
 
-			loss += self.backpropogate( batch_Y )
+			current_loss = self.backpropogate( batch_Y )
+			loss += np.sum(current_loss)
 
 			# Updating the progress bar
 			if verbose:

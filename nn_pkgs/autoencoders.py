@@ -59,7 +59,7 @@ class SparseAutoencoder(object):
 
 		self.network = BatchNeuralNet( self.input_size )
 		self.network.add( SparseLayer(input_size=(self.input_size,), nodes=self.hidden_size, initializer="glorot_normal",
-				lr = self.lr, sparsity=sparsity, penalty=penalty, activation=activation ) )
+				lr = self.lr, sparsity=sparsity, penalty=penalty, activation="sigmoid" ) )
 		self.network.add( SinglePerceptronLayer( input_size=self.hidden_size, nodes=self.input_size,
 				initializer="glorot_normal", lr=lr ) )
 		self.network.add_loss( MSE() )
@@ -76,7 +76,7 @@ class SparseAutoencoder(object):
 
 		returns output for the corresponding input during the last epoch
 		"""
-		return self.network.fit(X, X, epochs, shuffle, bs, verbose)  
+		return self.network.fit(X, X, epochs=epochs, shuffle=shuffle, bs=bs, verbose=verbose)  
 
 	def predict(self, X):
 		return self.network.predict(X)
