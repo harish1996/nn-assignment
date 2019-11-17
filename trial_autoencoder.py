@@ -3,35 +3,62 @@ import argparse
 import time
 import pickle
 import numpy as np
-import sys
-
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.metrics import classification_report,confusion_matrix
 
 from nn_pkgs.autoencoders import SparseAutoencoder
 
-def read_all_images( filename ):
-        print("Extracting {}".format(filename))
-        f = open(filename,"rb")
-        header = f.read(16)
-        header = struct.unpack('>4i',header)
-        (magic,nimages,rsize,csize) = header
-#         print(magic,nimages,rsize,csize)
-#         print(header)
-#         print("magic number = {}, num_items = {}, rows = {}, cols = {}".format(*header))
-        assert(magic==2051),"invalid header."
-        images = np.empty( shape=(nimages,rsize,csize) )
-        img_size = rsize*csize
-        total_size = nimages*img_size
-        total = struct.unpack('{}B'.format(total_size), f.read(total_size))
-        for inum in range(nimages):
-            im = total[img_size*inum:img_size*(inum+1)]
-            for row in range(rsize):
-#                 r = struct.unpack('{}B'.format(header[3]), f.read(header[3]) )
-                images[inum,row,:] = im[csize*row:csize*(row+1)]
-#         print(images[3,:,:])
-        return images
-        
+# def read_all_images( filename ):
+#         print("Extracting {}".format(filename))
+#         f = open(filename,"rb")
+#         header = f.read(16)
+#         header = struct.unpack('>4i',header)
+#         (magic,nimages,rsize,csize) = header
+# #         print(magic,nimages,rsize,csize)
+# #         print(header)
+# #         print("magic number = {}, num_items = {}, rows = {}, cols = {}".format(*header))
+#         assert(magic==2051),"invalid header."
+#         images = np.empty( shape=(nimages,rsize,csize) )
+#         img_size = rsize*csize
+#         total_size = nimages*img_size
+#         total = struct.unpack('{}B'.format(total_size), f.read(total_size))
+#         for inum in range(nimages):
+#             im = total[img_size*inum:img_size*(inum+1)]
+#             for row in range(rsize):
+# #                 r = struct.unpack('{}B'.format(header[3]), f.read(header[3]) )
+#                 images[inum,row,:] = im[csize*row:csize*(row+1)]
+# #         print(images[3,:,:])
+#         return images
+
+def read_all_images( filename )
+	return read_n_images( filename )
+
+def read_n_images( filename, n="all" ):
+	import numpy as np
+	import struct
+	print("Extracting {}".format(filename))
+	f = open(filename,"rb")
+	header = f.read(16)
+	header = struct.unpack('>4i',header)
+	(magic,nimages,rsize,csize) = header
+	assert(magic==2051),"invalid header."
+	if isinstance(n,str):
+		if n=="all":
+			n = nimages
+		else:
+			raise ValueError("Unknown command")
+	elif isinstance(n,int): 
+		if n > nimages:
+			raise ValueError("n ({}) is higher than the total number of images ({})".format(n,nimages))
+		if n <= 0:
+			raise ValueError("n ({}) should be positive integer".format(n))
+	img_size = rsize*csize
+	total_size = n*img_size
+	buf = f.read(total_size)
+	images = np.frombuffer( buf, dtype=np.uint8).astype(np.float32)
+	images = images.reshape((n,rsize,csize))
+	return images
+
 def read_all_labels( filename ):
     print("Extracting {}".format(filename))
     f = open(filename,"rb")
@@ -103,7 +130,7 @@ scaled_test_x = scaler.transform( test_x )
 encoder = SparseAutoencoder( input_size=scaled_train_x.shape[1], hidden_size=40*40, lr=v_lr, 
 				sparsity=v_sparsity, penalty=v_penalty )
 
-encoder.fit( scaled_train_x, epochs=n_epochs, verbose=True )
+encoder.fit( scaled_train_x, epochs=n_epochs, verbose=False )
 
 
 reconstructed, loss = encoder.encode_decode( scaled_test_x )
