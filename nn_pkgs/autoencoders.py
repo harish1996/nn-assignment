@@ -4,6 +4,7 @@ from .layer import Layer
 from .SinglePerceptron.slp import SinglePerceptronLayer
 from .networks import BatchNeuralNet
 from .loss import MSE
+from .activations import Sigmoid
 
 class SparseLayer(SinglePerceptronLayer):
 	
@@ -62,6 +63,7 @@ class SparseAutoencoder(object):
 				lr = self.lr, sparsity=sparsity, penalty=penalty, activation="sigmoid" ) )
 		self.network.add( SinglePerceptronLayer( input_size=self.hidden_size, nodes=self.input_size,
 				initializer="glorot_normal", lr=lr ) )
+		self.network.add( Sigmoid( input_shape=self.input_size ) )
 		self.network.add_loss( MSE() )
 
 	def fit(self, X, epochs, shuffle=True, bs=1, verbose=True ):

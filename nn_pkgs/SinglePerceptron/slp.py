@@ -104,8 +104,11 @@ class SinglePerceptronLayer(Layer):
 		self.input_size = input_size
 		self.nodes = nodes
 		self.output_shape = nodes
+
+		# Each row corresponds to a node's weight, with the first column representing the bias
+		# Each column corresponds to all the weight's going out from a particular input. The first
+		# 	column is the bias column
 		self.W = initializer( size= (nodes,input_size+1) )
-		# self.W = np.random.normal( size= (nodes,input_size+1), scale=0.001 ) #set of 0 vectors
 
 		self.lr = lr
 

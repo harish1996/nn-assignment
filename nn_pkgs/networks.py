@@ -235,7 +235,7 @@ class BatchNeuralNet(NeuralNet):
 		"""
 		out = self.feedforward(X)
 		self.loss.set_output(Y)
-		print(self.out,Y)
+		# print(self.out,Y)
 		loss = self.loss.feedforward( out )
 		# print(loss)
 		return [ out, loss ]
