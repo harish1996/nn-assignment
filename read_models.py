@@ -92,9 +92,11 @@ loss = np.abs( rec_rescaled - train_x )
 text += " \n Average train set reconstruction error = {}".format(np.mean(loss))
 print( text )
 
-# layer = encoder.sparse_layer()
-# rep = layer.W[0,1:].reshape(28,28)
+layer = encoder.sparse_layer()
+rep = layer.W[1,1:].reshape(28,28)
+rep1 = layer.W[2,1:].reshape(28,28)
 
+plt.imsave( arr=rep, fname="internal_rep"+outfile )
 #normie = Normalize( rep )
 print("************** Saving images **********")
 plt.imsave( arr=scaled_train_x[115].reshape(28,28), fname="input_"+outfile )
