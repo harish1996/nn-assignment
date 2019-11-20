@@ -143,5 +143,6 @@ layer = encoder.sparse_layer()
 rep = layer.W[0,1:].reshape(28,28)
 
 #normie = Normalize( rep )
-plt.imsave( arr=reconstructed,  fname="plot.jpg" )
+plt.imsave( arr=reconstructed[0],  fname="plot_reconstructed_"+ustring+".jpg" )
+plt.imsave( arr=scaled_train_x[0], fname="plot_train_"+ustring+".jpg" )
 

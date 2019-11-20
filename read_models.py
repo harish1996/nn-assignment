@@ -96,9 +96,14 @@ layer = encoder.sparse_layer()
 rep = layer.W[1,1:].reshape(28,28)
 rep1 = layer.W[2,1:].reshape(28,28)
 
-plt.imsave( arr=rep, fname="internal_rep"+outfile )
+plt.imsave( arr=rep, cmap="gray", fname="internal_rep1"+outfile )
+plt.imsave( arr=rep1, cmap="gray", fname="internal_rep2"+outfile )
 #normie = Normalize( rep )
 print("************** Saving images **********")
-plt.imsave( arr=scaled_train_x[115].reshape(28,28), fname="input_"+outfile )
-plt.imsave( arr=reconstructed[115].reshape(28,28),  fname="output_"+outfile )
+
+for i in range(10):
+	rand = int(np.random.uniform( low=0, high=scaled_train_x.shape[0] ))
+
+	plt.imsave( arr=scaled_train_x[rand].reshape(28,28), cmap="gray", fname="input_"+str(rand)+outfile )
+	plt.imsave( arr=reconstructed[rand].reshape(28,28), cmap="gray", fname="output_"+str(rand)+outfile )
 
